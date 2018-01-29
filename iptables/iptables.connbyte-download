@@ -1,0 +1,14 @@
+# url: http://serverfault.com/a/249598/145912
+#
+#Mark downloads
+$IPT -t mangle -N BULKCONN   
+#Small packet is probably interactive or flow control
+$IPT -t mangle -A BULKCONN -m length --length 0:500 -j RETURN
+#Small packet connections: multi purpose (don't harm since not maxed out)
+$IPT -t mangle -A BULKCONN -m connbytes --connbytes 0:250 --connbytes-dir both --connbytes-mode avgpkt -j RETURN
+
+#After one megabyte a connection is considered a download
+$IPT -t mangle -A BULKCONN -m connbytes --connbytes 1048576: --connbytes-dir both --connbytes-mode bytes -j MARK --set-mark 6
+$IPT -t mangle -A BULKCONN -j RETURN
+
+$IPT -t mangle -A PREROUTING -i eth1 -j BULKCONN
